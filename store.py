@@ -1,5 +1,3 @@
-
-
 class Store(dict):
     """
     Signleton dictionary 

@@ -13,24 +13,46 @@ class UdpClient(threading.Thread):
         threading.Thread.__init__(self)
         # create a udp socket 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # set the timeout to prevent forever waiting 
+        self.sock.settimeout(2)
+
+
         # store the server id need to connect 
         self.server_id = server_id
 
-    def run(self):
-        while True:
-            # ping the server 
+    def ping(self, prob):
+        """
+        record the probability the client is down 
+        """
+        if prob == 1 : 
             sleep(PING_SLEEP)
+        if prob <= 0.001: 
+            """
+            we have very great confident that this client is lost
+            """
+            print("Peer "+str(self.server_id)+" is no longer alive.")
+        else:
+            # server may dead 
+            # ping the server 
             self.sock.sendto(
                 Store()['my_id'].to_bytes(8,byteorder='big'), 
                 ("127.0.0.1", BASE_PORT+self.server_id)
             )
-
-            #  I should have a response from server 
-            data, addr = self.sock.recvfrom(2048)
-            print(
-                "A ping response message was received from Peer " + 
-                str(addr[1]-BASE_PORT) + "."
-            )
+            try:
+                #  I should have a response from server 
+                data, addr = self.sock.recvfrom(2048)
+                print(
+                    "A ping response message was received from Peer " + 
+                    str(addr[1]-BASE_PORT) + "."
+                )
+            except socket.timeout as e:
+                self.ping(Store()['LOSS_RATE']* prob)
+            else: 
+                # this client is definately alive 
+                self.ping(1)
+                
+    def run(self):
+        self.ping(1)            
 
         
 class UdpServer(threading.Thread):
