@@ -6,6 +6,7 @@ from store import Store
 
 BASE_PORT = Store()['BASE_PORT']
 PING_SLEEP= Store()['PING_SLEEP']
+LOSS_RATE = Store()['LOSS_RATE']
 
 class UdpClient(threading.Thread):
     def __init__(self, server_id):
