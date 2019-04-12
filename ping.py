@@ -8,6 +8,20 @@ BASE_PORT = Store()['BASE_PORT']
 PING_SLEEP= Store()['PING_SLEEP']
 LOSS_RATE = Store()['LOSS_RATE']
 
+
+# Const for request type 
+PING = 1
+RECV_PING= 2
+FILE = 3 
+
+def mk_mesg(req_type, the_id):
+    if req_type == PING: 
+        return bytes('PING '+ str(the_id))
+    elif req_type == RECV_PING:
+        return bytes('RECV ' + str(the_id))
+    elif req_type == FILE:
+        return bytes('FILE ' + str(the_id))
+
 class UdpClient(threading.Thread):
     def __init__(self, server_id):
         threading.Thread.__init__(self)
@@ -38,6 +52,7 @@ class UdpClient(threading.Thread):
         else:
             # server may dead 
             # ping the server 
+
             self.sock.sendto(
                 Store()['my_id'].to_bytes(8,byteorder='big'), 
                 ("127.0.0.1", BASE_PORT+self.server_id)
