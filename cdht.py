@@ -15,22 +15,45 @@ class Controller(object):
     def __init__(self,my_id, peer_ids ):
         # set up the peer object 
         self.peer = Peer(my_id)
-        [self.peer.add_suc(t) for t in peer_ids]
+        [self.add_suc(t) for t in peer_ids]
         
-        # star the ping client 
-        for i in range(2):
-            self.start_ping_client(i)
 
         # start up this ping server to accept pign 
         self.start_pign_ser()
 
 
-    def start_ping_client(self, index):
-        # wrap and start the client 
-        UdpClient(self.peer.get_suc(index)).start()
+    def add_suc(self, peer_id):
+        """
+        start the client
+        and record the new successor
+        """ 
+        UdpClient(peer_id).start()
+        self.peer.add_suc(peer_id)
         
     def start_pign_ser(self):
         UdpServer().start()
+
+    def departure(self):
+        """
+        This client will leave, send message by TCP
+        """
+        pass
+
+    def suc_leave (self, sec):
+        # leaving of succsor 
+        self.peer.del_suc(sec)
+        # get the current alive succsor
+        """
+        Send a request for new successor via TCP
+        """
+
+    def pre_leave (self, pre, new_pre):
+        """
+        Pre seccsor ask to depreacate a precessor
+        """
+        # leaving of presuccor 
+        self.peer.del_pre(pre)
+        self.peer.add_pre(new_pre)
 
 
 if __name__ == "__main__":

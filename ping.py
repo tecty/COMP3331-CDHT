@@ -31,6 +31,10 @@ class UdpClient(threading.Thread):
             we have very great confident that this client is lost
             """
             print("Peer "+str(self.server_id)+" is no longer alive.")
+
+            # tell the controller this successor is leaved
+            Store()['controller'].suc_leave(self.server_id)
+
         else:
             # server may dead 
             # ping the server 

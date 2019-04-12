@@ -30,6 +30,14 @@ class Peer(object):
 
         return order[-index] % 256
         
+    """
+    leaving of the presuccsor or succssor 
+    """
+    def del_suc(self, peer_id):
+        self.successor.remove(peer_id)
+
+    def del_pre(self, peer_id):
+        self.predecessor.remove(peer_id)
 
 if __name__ == "__main__":
     p = Peer(3)
