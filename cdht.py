@@ -1,17 +1,26 @@
 #!python3
 
 from ping import UdpClient, UdpServer
+from store import Store
+from threading import Timer
 
 
+def debug_print():
+    print("DEBUG"+ str(Store()))
+    Timer(10, debug_print)
 
 
-# client config 
-my_id = 0
+class Controller(object):
+    def __init__(self,my_id, peer):
+        # get the peer list by order 
+        peer =  [t for t in peer if t > my_id] +
+            [t+256 for t in peer if t < my_id]
+
+
 
 
 if __name__ == "__main__":
     import sys
-    from store import Store
 
 
     """
@@ -24,6 +33,8 @@ if __name__ == "__main__":
     Store()['LOSS_RATE'] = float(sys.argv[5])
     # worker array 
     workers = []
+
+    debug_print()
 
     
     """
