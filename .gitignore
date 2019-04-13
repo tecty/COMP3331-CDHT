@@ -102,3 +102,10 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+
+# assignment only 
+requesting_log.txt
+responding_log.txt
+# testing 
+2017

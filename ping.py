@@ -18,6 +18,12 @@ RECV_PING= 2
 FILE = 3 
 FILE_ACK = 4
 
+# Evnet type 
+EVENT_SEND = 1
+EVENT_RECV = 2 
+EVENT_DROP = 3
+EVENT_RETR = 4
+
 
 class UdpClient(threading.Thread):
     def __init__(self, server_id):
@@ -139,6 +145,7 @@ class UdpServer(threading.Thread):
                 self.answer_ping(msg, addr)
             elif msg.header[0] == FILE:
                 self.answer_file(msg, addr)
+
 
 
 class FileSender(threading.Thread):
