@@ -1,8 +1,11 @@
 #!python3
 import socket
 import threading
+import random
 from time import sleep
 from store import Store
+from headers import Message
+
 
 BASE_PORT = Store()['BASE_PORT']
 PING_SLEEP= Store()['PING_SLEEP']
@@ -50,11 +53,14 @@ class UdpClient(threading.Thread):
             Store()['controller'].suc_leave(self.server_id)
 
         else:
+            # construct the message 
+            msg = Message(Store()['MSS'])
+            msg.setHeader(PING, Store()['my_id'])
+
             # server may dead 
             # ping the server 
-
             self.sock.sendto(
-                Store()['my_id'].to_bytes(8,byteorder='big'), 
+                msg.segment, 
                 ("127.0.0.1", BASE_PORT+self.server_id)
             )
             try:
@@ -86,11 +92,25 @@ class UdpServer(threading.Thread):
     def run(self):
         while True:
             data, addr = self.sock.recvfrom(2048)
-            client_id = int.from_bytes(data, 'big')
+            # loss the package as setted 
+            if random.random() <= Store()['LOSS_RATE']:
+                # we lost this package 
+                # print('package loss')
+                continue
+            
+            
+            # deconstruct the message
+            msg = Message(Store()['MSS'])
+            msg.segment =data
+            client_id = msg.header[1] 
             
             print(
                 "A ping request message was received from Peer " + 
                 str(client_id) + "."
             )
             # send back to ping client 
-            self.sock.sendto(Store()['my_id'].to_bytes(8, byteorder='big'), addr)
+
+            msg= Message(Store()['MSS'])
+            msg.setHeader(RECV_PING, Store()['my_id'])
+            
+            self.sock.sendto(msg.segment, addr)
