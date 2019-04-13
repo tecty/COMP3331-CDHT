@@ -62,6 +62,8 @@ class EventLog(object):
 
         self.reset_state()
 
+    def finish(self):
+        self.log_fp.close()
 
 if __name__ == "__main__":
     # open a log file as EventLog type

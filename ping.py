@@ -119,15 +119,22 @@ class UdpServer(threading.Thread):
 
         # Log it 
         self.event_log.event = EVENT_RECV
-        self.event_log.seq_num = self.ack
+        self.event_log.seq_num = msg.header[1]
         self.event_log.ack = self.ack
         self.event_log.buf_len = msg.getBodySize()
         self.event_log.log()
+
+        if msg.getBodySize() != Store()['MSS']:
+            # this file transfer is finished 
+            self.event_log.finish()
+            self.file.close()
 
         # construct the new message
         msg = Message(Store()['MSS'])
         msg.setHeader(FILE_ACK, self.ack)
         
+
+
         # DEBUG：
         # print("ACK: " + str(msg.header))
         # exit()
