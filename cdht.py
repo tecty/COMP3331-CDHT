@@ -1,42 +1,81 @@
 #!python3
 
 from ping import UdpClient, UdpServer
+from store import Store
+from threading import Timer
+from peer import Peer
 
 
+def debug_print():
+    print("DEBUG"+ str(Store()))
+    Timer(10, debug_print)
 
 
-# client config 
-my_id = 0
+class Controller(object):
+    def __init__(self,my_id, peer_ids ):
+        # set up the peer object 
+        self.peer = Peer(my_id)
+        [self.add_suc(t) for t in peer_ids]
+        
+
+        # start up this ping server to accept pign 
+        self.start_pign_ser()
+
+
+    def add_suc(self, peer_id):
+        """
+        start the client
+        and record the new successor
+        """ 
+        UdpClient(peer_id).start()
+        self.peer.add_suc(peer_id)
+        
+    def start_pign_ser(self):
+        UdpServer().start()
+
+    def departure(self):
+        """
+        This client will leave, send message by TCP
+        """
+        pass
+
+    def suc_leave (self, sec):
+        # leaving of succsor 
+        self.peer.del_suc(sec)
+        # get the current alive succsor
+        """
+        Send a request for new successor via TCP
+        """
+
+    def pre_leave (self, pre, new_pre):
+        """
+        Pre seccsor ask to depreacate a precessor
+        """
+        # leaving of presuccor 
+        self.peer.del_pre(pre)
+        self.peer.add_pre(new_pre)
 
 
 if __name__ == "__main__":
     import sys
-    from store import Store
 
 
     """
     Set up the arguements 
     """
     Store()['my_id'] = int(sys.argv[1])
-    peer_1 = int(sys.argv[2])
-    peer_2 = int(sys.argv[3])
     Store()['MSS'] = float(sys.argv[4])
     Store()['LOSS_RATE'] = float(sys.argv[5])
-    # worker array 
-    workers = []
 
-    
-    """
-    Set up the environment for each thread 
-    """
-    # This client need to ping these server 
-    workers.append(UdpClient(peer_1))
-    workers.append(UdpClient(peer_2))
-    # start this server 
-    workers.append(UdpServer())
 
     """
-    Run it!
+    Start up the controller 
     """
-    for w in workers:
-        w.start()
+    Store()['controller'] =\
+        Controller(Store()['my_id'],[
+            int(sys.argv[2]),
+            int(sys.argv[3])
+        ])
+
+    # start up the debug mode 
+    debug_print()
