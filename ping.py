@@ -109,7 +109,7 @@ class UdpServer(threading.Thread):
         self.file = open(file_name, 'wb+')
 
         # a log file to write 
-        self.event_log = EventLog(open('responding_log.txt' , 'w+'))
+        self.event_log = EventLog(open('requesting_log.txt' , 'w+'))
         self.ack = 0 
 
     def answer_file(self, msg:Message, addr):
@@ -117,10 +117,19 @@ class UdpServer(threading.Thread):
         # record the expected ack 
         self.ack += msg.getBodySize()
 
+        # Log it 
+        self.event_log.event = EVENT_RECV
+        self.event_log.seq_num = self.ack
+        self.event_log.ack = self.ack
+        self.event_log.buf_len = msg.getBodySize()
+        self.event_log.log()
+
         # construct the new message
         msg = Message(Store()['MSS'])
         msg.setHeader(FILE_ACK, self.ack)
-        print("ACK: " + str(msg.header))
+        
+        # DEBUG：
+        # print("ACK: " + str(msg.header))
         # exit()
         # send back an ack for sender to send next 
         self.sock.sendto(msg.segment, addr)
@@ -131,15 +140,23 @@ class UdpServer(threading.Thread):
             # loss the package as setted 
             # critical value for idenitfy loss
             critical_val = random.random()
-            if  critical_val <= Store()['LOSS_RATE']:
-                # we lost this package 
-                # print('package loss')
-                continue
-            
-            
+
             # deconstruct the message
             msg = Message(Store()['MSS'])
             msg.segment =data
+            
+            # we lost this package 
+            if  critical_val <= Store()['LOSS_RATE']:
+                # log the packet drop if it's file request 
+                if msg.header[0] == FILE:
+                    self.event_log.event =  EVENT_DROP
+                    self.event_log.ack = -1 
+                    self.event_log.seq_num = msg.header[1]
+                    self.event_log.buf_len = msg.getBodySize()
+                    self.event_log.log()
+                continue
+            
+            
             # dispatch by header type 
             if msg.header[0] == PING:
                 self.answer_ping(msg, addr)
