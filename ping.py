@@ -104,12 +104,18 @@ class UdpServer(threading.Thread):
         
         self.sock.sendto(msg.segment, addr)
 
-    def wait_file(self, file_name ):
+    def wait_file(self, file_name:int ):
         # tell the server to prepare a file income
-        self.file = open(file_name, 'wb+')
+        self.file = open(
+            str(file_name) +"_"+ str(Store()['my_id'])+".pdf",
+            'wb+'
+        )
 
         # a log file to write 
         self.event_log = EventLog(open('requesting_log.txt' , 'w+'))
+
+        print("We now start receiving the file ………")
+
         self.ack = 0 
 
     def answer_file(self, msg:Message, addr):
@@ -128,6 +134,7 @@ class UdpServer(threading.Thread):
             # this file transfer is finished 
             self.event_log.finish()
             self.file.close()
+            print("The file is received.")
 
         # construct the new message
         msg = Message(Store()['MSS'])
@@ -203,7 +210,7 @@ class FileSender(threading.Thread):
         msg = Message(Store()['MSS'])
         # set up the message 
         msg.setHeader(FILE, self.ack)
-        print("SEND: " + str(msg.header))
+        # print("SEND: " + str(msg.header))
         msg.body = buf
 
         # send the datagrame
@@ -228,9 +235,6 @@ class FileSender(threading.Thread):
             msg = Message(Store()['MSS'])
             msg.segment = data
             if msg.header[1] == self.ack + len(buf):
-                print(
-                    "the client Recieved the buffer"
-                )
                 # log this receive 
                 self.event_log.event = EVENT_RECV
                 self.event_log.ack = msg.header[1]
@@ -240,7 +244,6 @@ class FileSender(threading.Thread):
 
             else:
                 # re-send it 
-                print("retransmit the buffer")
                 self.send_buf(buf, True)
         except socket.timeout as e:
             # send this buffer again
@@ -248,7 +251,7 @@ class FileSender(threading.Thread):
 
     def run(self):
         buf = self.file.read(Store()['MSS'])
-            
+        print("We now start sending the file ………")
         while  buf:
      
             # try to send the buffer to server
@@ -260,7 +263,7 @@ class FileSender(threading.Thread):
             # get new buffer
             buf = self.file.read(Store()['MSS'])
 
-        print("finished the transfer")
+        print("The file is sent.")
 
 if __name__ == "__main__":
     """
@@ -272,9 +275,9 @@ if __name__ == "__main__":
     Store()['my_id'] = 2
 
     ser = UdpServer()
-    ser.wait_file('2017')
+    ser.wait_file(2012)
     ser.start()
 
 
     # send file 2012 to 2 server 
-    FileSender(2).start()
+    FileSender(2, "2012.pdf").start()
