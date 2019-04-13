@@ -101,18 +101,20 @@ class UdpServer(threading.Thread):
     def wait_file(self, file_name ):
         # tell the server to prepare a file income
         self.file = open(file_name, 'wb+')
+
+        # a log file to write 
+        self.log_file = open('responding_log.txt' , 'w+')
         self.ack = 0 
 
     def answer_file(self, msg:Message, addr):
         self.file.write(msg.body)
         # record the expected ack 
-        ack = msg.header[1]
+        self.ack += msg.getBodySize()
 
         # construct the new message
         msg = Message(Store()['MSS'])
-        msg.setHeader(FILE_ACK, ack)
-        print(msg.header)
-        print(msg.segment)
+        msg.setHeader(FILE_ACK, self.ack)
+        print("ACK: " + str(msg.header))
         # exit()
         # send back an ack for sender to send next 
         self.sock.sendto(msg.segment, addr)
@@ -155,6 +157,8 @@ class FileSender(threading.Thread):
         # file
         self.file = open(file_name, 'rb')
 
+        self.log_file = open('responding_log.txt' , 'w+')
+
         # ack byte 
         self.ack = 0
 
@@ -168,7 +172,7 @@ class FileSender(threading.Thread):
         msg = Message(Store()['MSS'])
         # set up the message 
         msg.setHeader(FILE, self.ack)
-        print(msg.header)
+        print("SEND: " + str(msg.header))
         msg.body = buf
 
         # send the datagrame
@@ -181,7 +185,7 @@ class FileSender(threading.Thread):
             data, addr = self.sock.recvfrom(2048)
             msg = Message(Store()['MSS'])
             msg.segment = data
-            if msg.header[1] == self.ack:
+            if msg.header[1] == self.ack + len(buf):
                 print(
                     "the client Recieved the buffer"
                 )
@@ -197,11 +201,12 @@ class FileSender(threading.Thread):
         buf = self.file.read(Store()['MSS'])
             
         while  buf:
-            # expect ack increment 
-            self.ack += len(buf)
-
+     
             # try to send the buffer to server
             self.send_buf(buf)
+
+            # expect ack increment 
+            self.ack += len(buf)
 
             # get new buffer
             buf = self.file.read(Store()['MSS'])
@@ -212,6 +217,9 @@ if __name__ == "__main__":
     """
     Self sending test 
     """
+    # we can handling the loss
+    Store()['LOSS_RATE'] = 0.3
+
     Store()['my_id'] = 2
 
     ser = UdpServer()

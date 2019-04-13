@@ -1,3 +1,4 @@
+import time
 class Store(dict):
     """
     Signleton dictionary 
@@ -7,9 +8,11 @@ class Store(dict):
     # basic settings here 
     __instance = {
         'BASE_PORT' : 50000,
-        'PING_SLEEP': 2    ,
+        'PING_SLEEP': 2,
         'LOSS_RATE' : 0,
         'MSS' : 500,
+        # Programme start time stamp
+        'START_TIME': time.time()
     }
 
     def __new__(cls):
