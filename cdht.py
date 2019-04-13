@@ -18,11 +18,19 @@ class InputWorker(Thread):
             # always want to accept new value
             in_val= input()
             argv = in_val.split()
-            if argv[0] == 'request' and \
-                (int(argv[1]) >=0  and int(argv[1]) < 256):
+            if argv[0] == 'request':
+                try:
+                    file_id = int(argv[1])
+                except Exception as e:
+                    print("Invalid input:" + str(argv))
+                    continue
+                if ( file_id < 0  or file_id > 10000):
+                    print("File Id out of bound")
+                    continue
                 # let controller to handle file request 
                 Store()['controller'].request(int(argv[1]))
-            # print(argv)
+            else: 
+                print("Not Support: " + str(argv))
 
 class Controller(object):
     def __init__(self,my_id, peer_ids ):

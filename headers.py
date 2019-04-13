@@ -13,36 +13,37 @@ def bytes_to_int(b:bytes):
 
 class Message(object):
     def __init__(self, size):
-        self.msg = bytearray()
-        self.seg_size = size
+        self.__msg = bytearray()
+        self.__seg_size = size
         
     def setHeader(self, mes_type, val):
-        self.msg[0:16] = int_to_bytes(mes_type) + int_to_bytes(val)
+        self.__msg[0:16] = int_to_bytes(mes_type) + int_to_bytes(val)
 
     @property
     def header(self):
-        return (bytes_to_int(self.msg[0:8]) ,bytes_to_int(self.msg[8:16])  )
+        return (bytes_to_int(self.__msg[0:8]) ,bytes_to_int(self.__msg[8:16])  )
 
     def getBodySize(self):
         """
         calculat the body size 
         """
-        return len(self.msg) - 16 
+        return len(self.__msg) - 16 
     
-    def getMaxBodySize(self):
+    @property
+    def seg_size(self):
         """
         Get how much payload I can load 
         """
-        return self.seg_size - 16
+        return self.__seg_size 
     
     @property
     def body(self):
-        return self.msg[16:]
+        return self.__msg[16:]
 
 
     @body.setter
     def body(self, body:bytearray):
-        self.msg[16: self.seg_size] = body
+        self.__msg[16: self.seg_size+16] = body
 
 
     @property
@@ -50,11 +51,11 @@ class Message(object):
         """
         get the messgae we wrapped
         """
-        return self.msg
+        return self.__msg
 
     @segment.setter
     def segment(self, val):
-        self.msg = val
+        self.__msg = val
 
   
 
@@ -67,7 +68,7 @@ if __name__ == "__main__":
     msg.body = bytes('helloworld', 'utf-8')
     print(msg.header)
     print(msg.getBodySize())
-    print(msg.getMaxBodySize())
+    print(msg.seg_size)
     recv = Message(500)
     recv.segment = msg.segment
     print(recv.header)
