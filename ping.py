@@ -82,12 +82,48 @@ class UdpServer(threading.Thread):
         self.sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
         # bind to a port 
         self.sock.bind(("127.0.0.1", BASE_PORT + Store()['my_id']) ) 
+        self.file = None
+
+    def answer_ping(self, msg, addr):
+        client_id = msg.header[1] 
+        
+        print(
+            "A ping request message was received from Peer " + 
+            str(client_id) + "."
+        )
+        # send back to ping client 
+
+        msg= Message(Store()['MSS'])
+        msg.setHeader(RECV_PING, Store()['my_id'])
+        
+        self.sock.sendto(msg.segment, addr)
+
+    def wait_file(self, file_name ):
+        # tell the server to prepare a file income
+        self.file = open(file_name, 'wb+')
+        self.ack = 0 
+
+    def answer_file(self, msg:Message, addr):
+        self.file.write(msg.body)
+        # record the expected ack 
+        ack = msg.header[1]
+
+        # construct the new message
+        msg = Message(Store()['MSS'])
+        msg.setHeader(FILE_ACK, ack)
+        print(msg.header)
+        print(msg.segment)
+        # exit()
+        # send back an ack for sender to send next 
+        self.sock.sendto(msg.segment, addr)
 
     def run(self):
         while True:
             data, addr = self.sock.recvfrom(2048)
             # loss the package as setted 
-            if random.random() <= Store()['LOSS_RATE']:
+            # critical value for idenitfy loss
+            critical_val = random.random()
+            if  critical_val <= Store()['LOSS_RATE']:
                 # we lost this package 
                 # print('package loss')
                 continue
@@ -96,18 +132,11 @@ class UdpServer(threading.Thread):
             # deconstruct the message
             msg = Message(Store()['MSS'])
             msg.segment =data
-            client_id = msg.header[1] 
-            
-            print(
-                "A ping request message was received from Peer " + 
-                str(client_id) + "."
-            )
-            # send back to ping client 
-
-            msg= Message(Store()['MSS'])
-            msg.setHeader(RECV_PING, Store()['my_id'])
-            
-            self.sock.sendto(msg.segment, addr)
+            # dispatch by header type 
+            if msg.header[0] == PING:
+                self.answer_ping(msg, addr)
+            elif msg.header[0] == FILE:
+                self.answer_file(msg, addr)
 
 
 class FileSender(threading.Thread):
@@ -116,7 +145,7 @@ class FileSender(threading.Thread):
     """
     def __init__(self, peer_id, file_name='cdht.py'):
         threading.Thread.__init__(self)
-        self.port_num = peer_id + 50000
+        self.port_num = peer_id + BASE_PORT
         self.file_name = file_name
 
         # set up the sender as udp 
@@ -139,6 +168,7 @@ class FileSender(threading.Thread):
         msg = Message(Store()['MSS'])
         # set up the message 
         msg.setHeader(FILE, self.ack)
+        print(msg.header)
         msg.body = buf
 
         # send the datagrame
@@ -149,13 +179,15 @@ class FileSender(threading.Thread):
         try:
             #  I should have a response from server 
             data, addr = self.sock.recvfrom(2048)
-            msg = Message(data)
+            msg = Message(Store()['MSS'])
+            msg.segment = data
             if msg.header[1] == self.ack:
                 print(
                     "the client Recieved the buffer"
                 )
             else:
                 # re-send it 
+                print("retransmit the buffer")
                 self.send_buf(buf)
         except socket.timeout as e:
             # send this buffer again
@@ -166,7 +198,7 @@ class FileSender(threading.Thread):
             
         while  buf:
             # expect ack increment 
-            self.ack += Store()['MSS']
+            self.ack += len(buf)
 
             # try to send the buffer to server
             self.send_buf(buf)
@@ -174,6 +206,18 @@ class FileSender(threading.Thread):
             # get new buffer
             buf = self.file.read(Store()['MSS'])
 
+        print("finished the transfer")
+
 if __name__ == "__main__":
-    # send file 2012 to 
+    """
+    Self sending test 
+    """
+    Store()['my_id'] = 2
+
+    ser = UdpServer()
+    ser.wait_file('2017')
+    ser.start()
+
+
+    # send file 2012 to 2 server 
     FileSender(2).start()
