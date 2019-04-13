@@ -15,8 +15,14 @@ class InputWorker(Thread):
         Thread.__init__(self)
     def run(self):
         while(True):
+            # always want to accept new value
             in_val= input()
-            print(in_val)
+            argv = in_val.split()
+            if argv[0] == 'request' and \
+                (int(argv[1]) >=0  and int(argv[1]) < 256):
+                # let controller to handle file request 
+                Store()['controller'].request(int(argv[1]))
+            # print(argv)
 
 class Controller(object):
     def __init__(self,my_id, peer_ids ):
@@ -62,6 +68,9 @@ class Controller(object):
         # leaving of presuccor 
         self.peer.del_pre(pre)
         self.peer.add_pre(new_pre)
+
+    def request (self, file_id):
+        print("I want" + str(file_id))
 
 
 if __name__ == "__main__":
