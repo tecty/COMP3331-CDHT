@@ -5,7 +5,7 @@ import random
 from time import sleep
 from store import Store
 from headers import Message
-
+from event import * 
 
 BASE_PORT = Store()['BASE_PORT']
 PING_SLEEP= Store()['PING_SLEEP']
@@ -109,7 +109,7 @@ class UdpServer(threading.Thread):
         self.file = open(file_name, 'wb+')
 
         # a log file to write 
-        self.log_file = open('responding_log.txt' , 'w+')
+        self.event_log = EventLog(open('responding_log.txt' , 'w+'))
         self.ack = 0 
 
     def answer_file(self, msg:Message, addr):
@@ -163,14 +163,14 @@ class FileSender(threading.Thread):
 
         # file
         self.file = open(file_name, 'rb')
-
-        self.log_file = open('responding_log.txt' , 'w+')
+        # log handle 
+        self.event_log = EventLog(open('responding_log.txt' , 'w+'))
 
         # ack byte 
         self.ack = 0
 
 
-    def send_buf(self, buf):
+    def send_buf(self, buf, is_retr:bool = False):
         """
         Logic for send the buffer 
         """
@@ -187,6 +187,17 @@ class FileSender(threading.Thread):
             msg.segment, 
             ("127.0.0.1", self.port_num)
         )
+
+        # log this send 
+        if is_retr :
+            self.event_log.event = EVENT_RETR
+        else:
+            self.event_log.event = EVENT_SEND
+        self.event_log.ack = self.ack 
+        self.event_log.buf_len = len(buf)
+        self.event_log.seq_num = self.ack
+        self.event_log.log()
+
         try:
             #  I should have a response from server 
             data, addr = self.sock.recvfrom(2048)
@@ -196,13 +207,20 @@ class FileSender(threading.Thread):
                 print(
                     "the client Recieved the buffer"
                 )
+                # log this receive 
+                self.event_log.event = EVENT_RECV
+                self.event_log.ack = msg.header[1]
+                self.event_log.buf_len = 0
+                self.event_log.seq_num = self.ack
+                self.event_log.log()
+
             else:
                 # re-send it 
                 print("retransmit the buffer")
-                self.send_buf(buf)
+                self.send_buf(buf, True)
         except socket.timeout as e:
             # send this buffer again
-            self.send_buf(buf)
+            self.send_buf(buf, True)
 
     def run(self):
         buf = self.file.read(Store()['MSS'])
