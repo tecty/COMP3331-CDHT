@@ -2,7 +2,7 @@
 
 from ping import UdpClient, UdpServer
 from store import Store
-from threading import Timer
+from threading import Timer,Thread
 from peer import Peer
 
 
@@ -10,17 +10,25 @@ def debug_print():
     print("DEBUG"+ str(Store()))
     Timer(10, debug_print)
 
+class InputWorker(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+    def run(self):
+        while(True):
+            in_val= input()
+            print(in_val)
 
 class Controller(object):
     def __init__(self,my_id, peer_ids ):
         # set up the peer object 
         self.peer = Peer(my_id)
         [self.add_suc(t) for t in peer_ids]
-        
 
         # start up this ping server to accept pign 
         self.start_pign_ser()
 
+        # start to accept the user input
+        InputWorker().start()
 
     def add_suc(self, peer_id):
         """
