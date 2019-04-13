@@ -16,14 +16,8 @@ LOSS_RATE = Store()['LOSS_RATE']
 PING = 1
 RECV_PING= 2
 FILE = 3 
+FILE_ACK = 4
 
-def mk_mesg(req_type, the_id):
-    if req_type == PING: 
-        return bytes('PING '+ str(the_id))
-    elif req_type == RECV_PING:
-        return bytes('RECV ' + str(the_id))
-    elif req_type == FILE:
-        return bytes('FILE ' + str(the_id))
 
 class UdpClient(threading.Thread):
     def __init__(self, server_id):
@@ -31,7 +25,7 @@ class UdpClient(threading.Thread):
         # create a udp socket 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # set the timeout to prevent forever waiting 
-        self.sock.settimeout(2)
+        self.sock.settimeout(1)
 
 
         # store the server id need to connect 
@@ -114,3 +108,72 @@ class UdpServer(threading.Thread):
             msg.setHeader(RECV_PING, Store()['my_id'])
             
             self.sock.sendto(msg.segment, addr)
+
+
+class FileSender(threading.Thread):
+    """
+    Sender send to UDP server 
+    """
+    def __init__(self, peer_id, file_name='cdht.py'):
+        threading.Thread.__init__(self)
+        self.port_num = peer_id + 50000
+        self.file_name = file_name
+
+        # set up the sender as udp 
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.settimeout(1)
+
+        # file
+        self.file = open(file_name, 'rb')
+
+        # ack byte 
+        self.ack = 0
+
+
+    def send_buf(self, buf):
+        """
+        Logic for send the buffer 
+        """
+
+        # buffer to message 
+        msg = Message(Store()['MSS'])
+        # set up the message 
+        msg.setHeader(FILE, self.ack)
+        msg.body = buf
+
+        # send the datagrame
+        self.sock.sendto(
+            msg.segment, 
+            ("127.0.0.1", self.port_num)
+        )
+        try:
+            #  I should have a response from server 
+            data, addr = self.sock.recvfrom(2048)
+            msg = Message(data)
+            if msg.header[1] == self.ack:
+                print(
+                    "the client Recieved the buffer"
+                )
+            else:
+                # re-send it 
+                self.send_buf(buf)
+        except socket.timeout as e:
+            # send this buffer again
+            self.send_buf(buf)
+
+    def run(self):
+        buf = self.file.read(Store()['MSS'])
+            
+        while  buf:
+            # expect ack increment 
+            self.ack += Store()['MSS']
+
+            # try to send the buffer to server
+            self.send_buf(buf)
+
+            # get new buffer
+            buf = self.file.read(Store()['MSS'])
+
+if __name__ == "__main__":
+    # send file 2012 to 
+    FileSender(2).start()
