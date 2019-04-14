@@ -106,6 +106,9 @@ class Controller(object):
             # print File not here promet
             print("File "+str(file_id)+" is not stored here.")
             print("File request message has been forwarded to my successor.")
+            InfoClient(
+                self.peer.get_suc(0), INFO_FILE_REQ, file_id, requester_id
+            ).start()
 
     def handle_file_waiting(self,from_id:int, file_id:int):
         print("Received a response message from peer "+str(from_id)+
@@ -124,7 +127,9 @@ class Controller(object):
             " has been sent to my successor."
         )
         # send to the recevier to open the port 
-        InfoClient(self.peer.get_suc(0), INFO_FILE_RES, file_id).start()
+        InfoClient(
+            self.peer.get_suc(0), INFO_FILE_REQ, file_id, self.my_id
+        ).start()
         
         
 if __name__ == "__main__":

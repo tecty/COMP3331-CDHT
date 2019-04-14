@@ -77,6 +77,8 @@ class UdpClient(threading.Thread):
                 self.ping(1)
                 
     def run(self):
+        # overwite the timer 
+        time.sleep(1)
         self.ping(0.99)            
 
 class UdpServer(threading.Thread):
