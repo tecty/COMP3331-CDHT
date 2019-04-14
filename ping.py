@@ -54,7 +54,7 @@ class UdpClient(threading.Thread):
 
         else:
             # construct the message 
-            msg = Message(Store()['MSS'])
+            msg = Message()
             msg.setHeader(PING, Store()['my_id'])
 
             # server may dead 
@@ -99,7 +99,7 @@ class UdpServer(threading.Thread):
         )
         # send back to ping client 
 
-        msg= Message(Store()['MSS'])
+        msg= Message()
         msg.setHeader(RECV_PING, Store()['my_id'])
         
         self.sock.sendto(msg.segment, addr)
@@ -137,7 +137,7 @@ class UdpServer(threading.Thread):
             print("The file is received.")
 
         # construct the new message
-        msg = Message(Store()['MSS'])
+        msg = Message()
         msg.setHeader(FILE_ACK, self.ack)
         
 
@@ -156,8 +156,7 @@ class UdpServer(threading.Thread):
             critical_val = random.random()
 
             # deconstruct the message
-            msg = Message(Store()['MSS'])
-            msg.segment =data
+            msg = Message(data)
             
             # we lost this package 
             if  critical_val <= Store()['LOSS_RATE']:
@@ -207,7 +206,7 @@ class FileSender(threading.Thread):
         """
 
         # buffer to message 
-        msg = Message(Store()['MSS'])
+        msg = Message()
         # set up the message 
         msg.setHeader(FILE, self.ack)
         # print("SEND: " + str(msg.header))
@@ -232,8 +231,8 @@ class FileSender(threading.Thread):
         try:
             #  I should have a response from server 
             data, addr = self.sock.recvfrom(2048)
-            msg = Message(Store()['MSS'])
-            msg.segment = data
+            msg = Message(data)
+            
             if msg.header[1] == self.ack + len(buf):
                 # log this receive 
                 self.event_log.event = EVENT_RECV
@@ -270,7 +269,7 @@ if __name__ == "__main__":
     Self sending test 
     """
     # we can handling the loss
-    Store()['LOSS_RATE'] = 0.3
+    Store()['LOSS_RATE'] = 0.1
 
     Store()['my_id'] = 2
 

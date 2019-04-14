@@ -1,4 +1,6 @@
 #!python3
+from store import Store
+
 def int_to_bytes(i:int):
     """
     Convert number to an 8 bytes 
@@ -12,9 +14,14 @@ def bytes_to_int(b:bytes):
     return int.from_bytes(b, 'big')
 
 class Message(object):
-    def __init__(self, size):
+    def __init__(self, segment = None):
         self.__msg = bytearray()
-        self.__seg_size = size
+        self.__seg_size = Store()['MSS']
+        if segment:
+            # set the segment by the input value 
+            self.segment = segment
+        
+
         
     def setHeader(self, mes_type, val):
         self.__msg[0:16] = int_to_bytes(mes_type) + int_to_bytes(val)
@@ -63,13 +70,12 @@ if __name__ == "__main__":
     i = 9
     print(bytes_to_int(int_to_bytes(i)) == i )
 
-    msg = Message(500)
+    msg = Message()
     msg.setHeader(2, 7)
     msg.body = bytes('helloworld', 'utf-8')
     print(msg.header)
     print(msg.getBodySize())
     print(msg.seg_size)
-    recv = Message(500)
-    recv.segment = msg.segment
+    recv = Message( msg.segment)
     print(recv.header)
     print(recv.body)
