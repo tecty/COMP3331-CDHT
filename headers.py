@@ -50,6 +50,9 @@ class Message(object):
 
     @body.setter
     def body(self, body:bytearray):
+        print("debug")
+        print(self.seg_size)
+        print(body)
         self.__msg[16: self.seg_size+16] = body
 
 

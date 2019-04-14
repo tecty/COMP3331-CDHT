@@ -44,6 +44,10 @@ class Controller(object):
         if not no_ping: 
             # when we debug it, we don't want ping to border us
             [self.add_suc(t) for t in peer_ids]
+            # start the info server (TCP server)
+            # to receive the information
+            InfoSer().start()
+
 
         # start up this ping server to accept pign 
         self.ping_ser = UdpServer()
@@ -115,6 +119,10 @@ class Controller(object):
                 " no need for request."
             )
             return
+        print(
+            "File request message for "+str(file_id)+
+            " has been sent to my successor."
+        )
         # send to the recevier to open the port 
         InfoClient(self.peer.get_suc(0), INFO_FILE_RES, file_id).start()
         
@@ -127,7 +135,7 @@ if __name__ == "__main__":
     Set up the arguements 
     """
     Store()['my_id'] = int(sys.argv[1])
-    Store()['MSS'] = float(sys.argv[4])
+    Store()['MSS'] = int(sys.argv[4])
     Store()['LOSS_RATE'] = float(sys.argv[5])
 
 

@@ -8,7 +8,7 @@ class Store(dict):
     # basic settings here 
     __instance = {
         'BASE_PORT' : 50000,
-        'PING_SLEEP': 2,
+        'PING_SLEEP': 15,
         'LOSS_RATE' : 0,
         'MSS' : 500,
         # Programme start time stamp

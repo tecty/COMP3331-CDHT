@@ -77,9 +77,8 @@ class UdpClient(threading.Thread):
                 self.ping(1)
                 
     def run(self):
-        self.ping(1)            
+        self.ping(0.99)            
 
-        
 class UdpServer(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
@@ -97,8 +96,12 @@ class UdpServer(threading.Thread):
             "A ping request message was received from Peer " + 
             str(client_id) + "."
         )
-        # send back to ping client 
 
+        # register this server is alive 
+        Store()['controller'].add_pre(client_id)
+
+        
+        # send back to ping client 
         msg= Message()
         msg.setHeader(RECV_PING, Store()['my_id'])
         
