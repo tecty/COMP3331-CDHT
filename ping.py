@@ -232,7 +232,7 @@ class FileSender(threading.Thread):
             #  I should have a response from server 
             data, addr = self.sock.recvfrom(2048)
             msg = Message(data)
-            
+
             if msg.header[1] == self.ack + len(buf):
                 # log this receive 
                 self.event_log.event = EVENT_RECV
@@ -249,8 +249,10 @@ class FileSender(threading.Thread):
             self.send_buf(buf, True)
 
     def run(self):
+        # wait for the peer to setup it's waiting file 
         buf = self.file.read(Store()['MSS'])
         print("We now start sending the file ………")
+        time.sleep(1)
         while  buf:
      
             # try to send the buffer to server

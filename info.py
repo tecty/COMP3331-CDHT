@@ -33,17 +33,29 @@ class InfoWorker(Thread):
         data = self.conn.recv(1024)
         # print(data)
         msg = Message(data)
+
         # handle by header 
         if msg.header[0] ==INFO_FILE_REQ:
-            print("File Request: " + str(msg.header[1]) )
-            # response needed
+            # print("File Request: " + str(msg.header[1]) )
+            Store()['controller'].handle_file_request(
+                msg.header[1],
+                bytes_to_int(msg.body)
+            )
+            # callback, no response 
+        if msg.header[0] ==INFO_FILE_RES:
+            # I can start listening to the file 
+            Store()['controller'].handle_file_waiting(
+                msg.header[1],
+                bytes_to_int(msg.body)
+            )
+
         elif msg.header[0] ==INFO_PEER_LOSS:
             print("Peer Loss "  + str(msg.header[1]))
             # response needed
         elif msg.header[0] ==INFO_PEER_EXIT:
             # gracefully ext a peer
             print("Peer is gracefully exit " + str(msg.header[1]))
-        print(bytes_to_int(msg.body))
+        # print(bytes_to_int(msg.body))
 
         # close the connection 
         self.conn.close()

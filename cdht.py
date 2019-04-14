@@ -1,10 +1,10 @@
 #!python3
 
-from ping import UdpClient, UdpServer
+from ping import UdpClient, UdpServer, FileSender
 from store import Store
 from threading import Timer,Thread
 from peer import Peer
-
+from info import InfoClient, InfoSer, INFO_FILE_REQ, INFO_PEER_EXIT, INFO_PEER_EXIT, INFO_PEER_LOSS, INFO_FILE_RES
 
 def debug_print():
     print("DEBUG"+ str(Store()))
@@ -18,7 +18,10 @@ class InputWorker(Thread):
             # always want to accept new value
             in_val= input()
             argv = in_val.split()
-            if argv[0] == 'request':
+            if not argv:
+                # not response anything
+                pass
+            elif argv[0] == 'request':
                 try:
                     file_id = int(argv[1])
                 except Exception as e:
@@ -28,19 +31,23 @@ class InputWorker(Thread):
                     print("File Id out of bound")
                     continue
                 # let controller to handle file request 
-                Store()['controller'].request(int(argv[1]))
+                Store()['controller'].request_file(int(argv[1]))
             else: 
                 print("Not Support: " + str(argv))
 
 class Controller(object):
-    def __init__(self,my_id, peer_ids ):
+    def __init__(self,my_id, peer_ids, no_ping = False):
+        # store my_id 
+        self.my_id = my_id
         # set up the peer object 
         self.peer = Peer(my_id)
-        [self.add_suc(t) for t in peer_ids]
+        if not no_ping: 
+            # when we debug it, we don't want ping to border us
+            [self.add_suc(t) for t in peer_ids]
 
         # start up this ping server to accept pign 
-        self.start_pign_ser()
-
+        self.ping_ser = UdpServer()
+        self.ping_ser.start()
         # start to accept the user input
         InputWorker().start()
 
@@ -52,8 +59,6 @@ class Controller(object):
         UdpClient(peer_id).start()
         self.peer.add_suc(peer_id)
         
-    def start_pign_ser(self):
-        UdpServer().start()
 
     def departure(self):
         """
@@ -69,6 +74,12 @@ class Controller(object):
         Send a request for new successor via TCP
         """
 
+    def add_pre(self, pre_id):
+        """
+        Call by Pingserver to record the presessor        
+        """
+        self.peer.add_pre(pre_id)
+
     def pre_leave (self, pre, new_pre):
         """
         Pre seccsor ask to depreacate a precessor
@@ -77,10 +88,37 @@ class Controller(object):
         self.peer.del_pre(pre)
         self.peer.add_pre(new_pre)
 
-    def request (self, file_id):
-        print("I want" + str(file_id))
+    def handle_file_request (self, requester_id:int, file_id:int):
+        if self.peer.has_file(file_id):
+            # prompt
+            print("File "+str(file_id)+" is here.")
 
+            # send to the recevier to open the port 
+            InfoClient(requester_id, INFO_FILE_RES, file_id).start()
 
+            # startup the file tr 
+            FileSender(requester_id, str(file_id)+".pdf").start()
+        else: 
+            # print File not here promet
+            print("File "+str(file_id)+" is not stored here.")
+            print("File request message has been forwarded to my successor.")
+
+    def handle_file_waiting(self,from_id:int, file_id:int):
+        print("Received a response message from peer "+str(from_id)+
+            ", which has the file "+str(file_id)+".")
+        self.ping_ser.wait_file(file_id)
+
+    def request_file(self, file_id:int):
+        if self.peer.has_file(file_id):
+            print(
+                "This peer have file " + str(file_id) + 
+                " no need for request."
+            )
+            return
+        # send to the recevier to open the port 
+        InfoClient(self.peer.get_suc(0), INFO_FILE_RES, file_id).start()
+        
+        
 if __name__ == "__main__":
     import sys
 
