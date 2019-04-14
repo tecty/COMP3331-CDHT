@@ -1,7 +1,7 @@
 from threading import Thread
 import socket
 from store import Store
-from headers import Message
+from headers import Message, int_to_bytes,bytes_to_int
 
 BASE_PORT = Store()['BASE_PORT']
 
@@ -12,11 +12,12 @@ INFO_PEER_LOSS = 20
 INFO_NEW_PEER = 21
 # gracefully exit 
 INFO_PEER_EXIT = 30 
+INFO_EXIT_ACK = 31
 
 """
-FILE REQUEST:
-Header: FILE_REQ : Requester Id 
-Body: Request file
+header: INFO_TYPE: Requester_id 
+Body: value
+
 """
 
 
@@ -29,11 +30,21 @@ class InfoWorker(Thread):
         """
         This thead to handle it 
         """
-        while True:
-            data = self.conn.recv(1024)
-            msg = Message(data)
-            
-            print(data)
+        data = self.conn.recv(1024)
+        # print(data)
+        msg = Message(data)
+        # handle by header 
+        if msg.header[0] ==INFO_FILE_REQ:
+            print("File Request: " + str(msg.header[1]) )
+            # response needed
+        elif msg.header[0] ==INFO_PEER_LOSS:
+            print("Peer Loss "  + str(msg.header[1]))
+            # response needed
+        elif msg.header[0] ==INFO_PEER_EXIT:
+            # gracefully ext a peer
+            print("Peer is gracefully exit " + str(msg.header[1]))
+        print(bytes_to_int(msg.body))
+
         # close the connection 
         self.conn.close()
 
@@ -51,11 +62,37 @@ class InfoSer(Thread):
             InfoWorker(con, addr).start()
 
 class InfoClient(Thread):
-    def __init__(self, server_id, info_type):
+    def __init__(self, server_id, info_type,
+        info_val, requester_id = None):
         Thread.__init__(self)
+        # store the passed in values
         self.server_id = server_id
-    def run(self):
-        pass
+        self.info_type = info_type
+        self.info_val = info_val
+        if requester_id:
+            self.requester_id = requester_id
+        else:
+            self.requester_id = Store()['my_id']
 
-if __name__ == "__main__":
-    pass
+        # setup the socket 
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    def run(self):
+        self.sock.connect(("127.0.0.1", BASE_PORT+self.server_id))
+        msg = Message()
+        msg.setHeader(self.info_type, self.requester_id)
+        msg.body = int_to_bytes(self.info_val)
+        # send the message 
+        self.sock.send(msg.segment)
+        # some cases we need to wait response and do callback 
+        if self.info_type in [INFO_PEER_LOSS, INFO_PEER_EXIT]:
+            msg = Message(self.sock.recv(1024))
+            if msg.header[0] == INFO_EXIT_ACK:
+                # this peer is reconised the loss
+                pass
+            elif msg.header[0] == INFO_NEW_PEER:
+                # register new peer
+                pass
+
+        # close the connection
+        self.sock.close()
