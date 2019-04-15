@@ -51,19 +51,16 @@ class InfoWorker(Thread):
 
         elif msg.header[0] ==INFO_PEER_LOSS:
             # print("Peer Loss "  + str(bytes_to_int(msg.body)))
-            # response needed
-            new_next = 0
-            suc =[Store()['controller'].get_suc(i) for i in range(2)]
-            if  suc[0]!= new_next:
-                new_next = suc[0]
-            else:
-                # return the second succsor 
-                new_next = suc[1]
+
+            # fetch the suc wich is not the lost one
+            loss_peer = bytes_to_int(msg.body)
+            suc = [Store()['controller'].get_suc(i) for i in range(2)]
+            suc = [s for s in suc if s != loss_peer]
 
             # warp the message for new next 
             reply = Message()
             reply.setHeader(INFO_NEW_PEER, 0)
-            reply.body= int_to_bytes(new_next)
+            reply.body= int_to_bytes(suc[0])
             self.conn.send(reply.segment)
             
 
