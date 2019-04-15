@@ -2,7 +2,7 @@
 
 from ping import UdpClient, UdpServer, FileSender
 from store import Store
-from threading import Timer,Thread
+from threading import Timer,Thread, Lock
 from peer import Peer
 from info import InfoClient, InfoSer, INFO_FILE_REQ, INFO_PEER_EXIT, INFO_PEER_EXIT, INFO_PEER_LOSS, INFO_FILE_RES
 
@@ -43,7 +43,7 @@ class Controller(object):
         self.peer = Peer(my_id)
         if not no_ping: 
             # when we debug it, we don't want ping to border us
-            [self.add_suc(t) for t in peer_ids]
+            self.workers = [self.add_suc(t) for t in peer_ids]
             # start the info server (TCP server)
             # to receive the information
             InfoSer().start()
@@ -55,20 +55,58 @@ class Controller(object):
         # start to accept the user input
         InputWorker().start()
 
+        # exit approve count 
+        self.exit_approve = 0
+        self.exit_approve_lock = Lock()
+
+
+
     def add_suc(self, peer_id):
         """
         start the client
         and record the new successor
         """ 
-        UdpClient(peer_id).start()
+        worker = UdpClient(peer_id)
+        worker.start()
         self.peer.add_suc(peer_id)
+        return worker
         
 
     def departure(self):
         """
-        This client will leave, send message by TCP
+        This client will leave, kill all ping client send message by TCP
         """
-        pass
+        # stop pinging
+        [w.stop() for w in self.workers]
+
+        # Inform the preseccor to exit 
+        InfoClient(
+            self.peer.get_pre(0), INFO_PEER_EXIT, self.peer.get_suc(1)
+        ).start()
+        InfoClient(
+            self.peer.get_pre(1), INFO_PEER_EXIT, self.peer.get_suc(0)
+        ).start()
+
+    def handle_allow_exit(self):
+        # other peer tell me I can exit
+        self.exit_approve_lock.acquire()
+        self.exit_approve += 1
+        if self.exit_approve == 2:
+            # exit the main thread 
+            exit()
+        self.exit_approve_lock.release()
+
+
+    def handle_peer_departure(self, depart_id:int, new_next:int):
+        # stop the ping to depart server
+        [w.stop() for w in self.workers]
+        # update the worker list
+        self.workers = [w for w in self.workers if w.server_id != depart_id]
+        # add a worker for new successor 
+        new_woker = UdpClient(new_next)
+        new_woker.start()
+
+        self.workers.append(new_woker)
 
     def suc_leave (self, sec):
         # leaving of succsor 

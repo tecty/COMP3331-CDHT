@@ -55,6 +55,17 @@ class InfoWorker(Thread):
         elif msg.header[0] ==INFO_PEER_EXIT:
             # gracefully ext a peer
             print("Peer is gracefully exit " + str(msg.header[1]))
+            # call back the main to update post
+            Store()['controller'].handle_peer_departure(
+                msg.header[1], bytes_to_int(msg.body)
+            )
+
+
+            # return the ack 
+            reply = Message()
+            reply.setHeader(INFO_EXIT_ACK, 0)
+            self.conn.send(reply.segment)
+
         # print(bytes_to_int(msg.body))
 
         # close the connection 
@@ -101,7 +112,8 @@ class InfoClient(Thread):
             msg = Message(self.sock.recv(1024))
             if msg.header[0] == INFO_EXIT_ACK:
                 # this peer is reconised the loss
-                pass
+                # callback the controller 
+                Store()["controller"].handle_allow_exit()
             elif msg.header[0] == INFO_NEW_PEER:
                 # register new peer
                 pass

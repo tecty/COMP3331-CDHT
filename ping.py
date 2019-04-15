@@ -51,7 +51,10 @@ class UdpClient(threading.Thread):
 
             # tell the controller this successor is leaved
             Store()['controller'].suc_leave(self.server_id)
-
+        elif self.__stop:
+            # this ping client is told to stop
+            # print("im leaving")
+            pass
         else:
             # construct the message 
             msg = Message()
@@ -75,8 +78,12 @@ class UdpClient(threading.Thread):
             else: 
                 # this client is definately alive 
                 self.ping(1)
+
+    def stop(self):
+        self.__stop = True
                 
     def run(self):
+        self.__stop = False
         # overwite the timer 
         time.sleep(1)
         self.ping(0.99)            
@@ -281,9 +288,18 @@ if __name__ == "__main__":
     Store()['my_id'] = 2
 
     ser = UdpServer()
-    ser.wait_file(2012)
+    # ser.wait_file(2012)
     ser.start()
 
 
-    # send file 2012 to 2 server 
-    FileSender(2, "2012.pdf").start()
+    # # send file 2012 to 2 server 
+    # FileSender(2, "2012.pdf").start()
+
+
+    # stop by controller 
+
+    ping = UdpClient(2)
+    ping.start()
+
+    time.sleep(5)
+    ping.stop()
