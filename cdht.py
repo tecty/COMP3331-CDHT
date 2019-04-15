@@ -62,18 +62,28 @@ class Controller(object):
         self.exit_approve = 0
         self.exit_approve_lock = Lock()
 
-
-
     def add_suc(self, peer_id):
         """
         start the client
         and record the new successor
         """ 
+        self.peer.add_suc(peer_id)
         worker = UdpClient(peer_id)
         worker.start()
-        self.peer.add_suc(peer_id)
         return worker
+
+    def get_suc(self,  index):
+        # just pass the implementation to reduce 
+        # coupling 
+        return self.peer.get_suc(index)
         
+
+    def prompt_sus(self):
+        # prompt the new relationship 
+        print("My first successor is now peer "+str(self.peer.get_suc(0))+".")
+        print("My second successor is now peer "+str(self.peer.get_suc(1))+".")
+
+
 
     def departure(self):
         """
@@ -103,7 +113,7 @@ class Controller(object):
     def handle_peer_departure(self, depart_id:int, new_next:int):
         # prompt the depart 
         print("Peer "+str(depart_id)+" will depart from the network.")
-        print("Debug: new sus: "+ str(new_next))
+        # print("Debug: new sus: "+ str(new_next))
         
         # remove the old successor 
         self.peer.del_suc(depart_id)
@@ -113,20 +123,24 @@ class Controller(object):
         self.workers = [w for w in self.workers if w.server_id != depart_id]
         
         # add a worker for new successor 
-        self.workers.append(self.add_suc(new_next))
-
-        # prompt the new relationship 
-        print("My first successor is now peer "+str(self.peer.get_suc(0))+".")
-        print("My second successor is now peer "+str(self.peer.get_suc(1))+".")
-
-
-    def suc_leave (self, sec):
+        self.handle_new_sus(new_next)
+        
+    def suc_leave (self, depart_id:int):
         # leaving of succsor 
-        self.peer.del_suc(sec)
+        self.workers = [w for w in self.workers if w.server_id != depart_id]
+        self.peer.del_suc(depart_id)
         # get the current alive succsor
         """
         Send a request for new successor via TCP
         """
+        # print("Debug: I get help from " + str(self.peer.get_suc(0)))
+        InfoClient(self.peer.get_suc(0), INFO_PEER_LOSS, depart_id).start()
+        
+
+    def handle_new_sus(self, new_next:int):
+        # print("Debug: I will get a new suc: " + str(new_next))
+        self.workers.append(self.add_suc(new_next))
+        self.prompt_sus()
 
     def add_pre(self, pre_id):
         """

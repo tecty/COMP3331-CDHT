@@ -31,6 +31,7 @@ class Peer(object):
 
     def get_suc(self, index):
         # constructure the correct order
+        # print("DEBUG: "+ str(self.successor))
         order = [t for t in self.successor ]
         order.sort() 
         order = [t for t in order if t > self.my_id] + \

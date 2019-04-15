@@ -50,8 +50,23 @@ class InfoWorker(Thread):
             )
 
         elif msg.header[0] ==INFO_PEER_LOSS:
-            print("Peer Loss "  + str(msg.header[1]))
+            # print("Peer Loss "  + str(bytes_to_int(msg.body)))
             # response needed
+            new_next = 0
+            suc =[Store()['controller'].get_suc(i) for i in range(2)]
+            if  suc[0]!= new_next:
+                new_next = suc[0]
+            else:
+                # return the second succsor 
+                new_next = suc[1]
+
+            # warp the message for new next 
+            reply = Message()
+            reply.setHeader(INFO_NEW_PEER, 0)
+            reply.body= int_to_bytes(new_next)
+            self.conn.send(reply.segment)
+            
+
         elif msg.header[0] ==INFO_PEER_EXIT:
             # gracefully ext a peer
             print("Peer is gracefully exit " + str(msg.header[1]))
@@ -59,7 +74,6 @@ class InfoWorker(Thread):
             Store()['controller'].handle_peer_departure(
                 msg.header[1], bytes_to_int(msg.body)
             )
-
 
             # return the ack 
             reply = Message()
@@ -116,7 +130,9 @@ class InfoClient(Thread):
                 Store()["controller"].handle_allow_exit()
             elif msg.header[0] == INFO_NEW_PEER:
                 # register new peer
-                pass
+                Store()["controller"].handle_new_sus(
+                    bytes_to_int(msg.body)
+                )
 
         # close the connection
         self.sock.close()
