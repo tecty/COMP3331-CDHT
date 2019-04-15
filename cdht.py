@@ -103,11 +103,15 @@ class Controller(object):
     def handle_peer_departure(self, depart_id:int, new_next:int):
         # prompt the depart 
         print("Peer "+str(depart_id)+" will depart from the network.")
+        print("Debug: new sus: "+ str(new_next))
         
+        # remove the old successor 
+        self.peer.del_suc(depart_id)
         # stop the ping to depart server
-        [w.stop() for w in self.workers]
+        [w.stop() for w in self.workers if w.server_id == depart_id]
         # update the worker list
         self.workers = [w for w in self.workers if w.server_id != depart_id]
+        
         # add a worker for new successor 
         self.workers.append(self.add_suc(new_next))
 
@@ -133,6 +137,7 @@ class Controller(object):
     def pre_leave (self, pre, new_pre):
         """
         Pre seccsor ask to depreacate a precessor
+        This will not use
         """
         # leaving of presuccor 
         self.peer.del_pre(pre)
