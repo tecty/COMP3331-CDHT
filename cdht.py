@@ -1,5 +1,5 @@
 #!python3
-
+import os
 from ping import UdpClient, UdpServer, FileSender
 from store import Store
 from threading import Timer,Thread, Lock
@@ -32,6 +32,9 @@ class InputWorker(Thread):
                     continue
                 # let controller to handle file request 
                 Store()['controller'].request_file(int(argv[1]))
+            elif argv[0] == 'quit':
+                # gracefully depart 
+                Store()['controller'].departure()
             else: 
                 print("Not Support: " + str(argv))
 
@@ -93,20 +96,25 @@ class Controller(object):
         self.exit_approve += 1
         if self.exit_approve == 2:
             # exit the main thread 
-            exit()
+            os._exit(0)
         self.exit_approve_lock.release()
 
 
     def handle_peer_departure(self, depart_id:int, new_next:int):
+        # prompt the depart 
+        print("Peer "+str(depart_id)+" will depart from the network.")
+        
         # stop the ping to depart server
         [w.stop() for w in self.workers]
         # update the worker list
         self.workers = [w for w in self.workers if w.server_id != depart_id]
         # add a worker for new successor 
-        new_woker = UdpClient(new_next)
-        new_woker.start()
+        self.workers.append(self.add_suc(new_next))
 
-        self.workers.append(new_woker)
+        # prompt the new relationship 
+        print("My first successor is now peer "+str(self.peer.get_suc(0))+".")
+        print("My second successor is now peer "+str(self.peer.get_suc(1))+".")
+
 
     def suc_leave (self, sec):
         # leaving of succsor 
