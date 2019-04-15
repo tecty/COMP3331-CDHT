@@ -204,6 +204,10 @@ if __name__ == "__main__":
     """
     Set up the arguements 
     """
+    if sys.argv[0] == "python3":
+        # to support multiple open way 
+        sys.argv.pop(0)
+
     Store()['my_id'] = int(sys.argv[1])
     Store()['MSS'] = int(sys.argv[4])
     Store()['LOSS_RATE'] = float(sys.argv[5])
