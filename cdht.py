@@ -8,7 +8,7 @@ from info import InfoClient, InfoSer, INFO_FILE_REQ, INFO_PEER_EXIT, INFO_PEER_E
 
 def debug_print():
     print("DEBUG"+ str(Store()))
-    Timer(10, debug_print)
+    Timer(10, debug_print).start()
 
 class InputWorker(Thread):
     def __init__(self):
@@ -223,4 +223,4 @@ if __name__ == "__main__":
         ])
 
     # start up the debug mode 
-    debug_print()
+    # debug_print()
