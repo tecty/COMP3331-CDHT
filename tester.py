@@ -51,9 +51,9 @@ fd = open('clean.sh','w+')
 fd.write("#!/bin/bash\n")
 # simple clean script
 # fd.write(cmd+"&& \n")
-fd.write("rm "+str(file_num)+"*.pdf clean.sh\n")
+fd.write("rm "+str(file_num)+"*.pdf test_start.sh clean.sh\n")
 fd.close()
 
-os.system('chmod u+x clean.sh')
+os.system('chmod u+x  test_start.sh clean.sh')
 os.system('cp send.pdf ' + str(file_num)+".pdf")
 print(cmd)
