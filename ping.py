@@ -265,16 +265,29 @@ class FileSender(threading.Thread):
         buf = self.file.read(Store()['MSS'])
         print("We now start sending the file ………")
         time.sleep(1)
+
+        # last lenth to prevent length%MSS == 0
+        last_len = 0
+        
         while  buf:
      
             # try to send the buffer to server
             self.send_buf(buf)
+
+            # record the last length 
+            last_len = len(buf)
 
             # expect ack increment 
             self.ack += len(buf)
 
             # get new buffer
             buf = self.file.read(Store()['MSS'])
+
+        # edge case preventhion
+        if last_len == Store()['MSS']:
+            # send an empty buffer to tell the serfer the file is 
+            # ended 
+            self.send_buf(buf)
 
         print("The file is sent.")
 
