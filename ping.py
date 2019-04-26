@@ -175,7 +175,7 @@ class UdpServer(threading.Thread):
                 # log the packet drop if it's file request 
                 if msg.header[0] == FILE:
                     self.event_log.event =  EVENT_DROP
-                    self.event_log.ack = -1 
+                    self.event_log.ack = 0 
                     self.event_log.seq_num = msg.header[1]
                     self.event_log.buf_len = msg.getBodySize()
                     self.event_log.log()
