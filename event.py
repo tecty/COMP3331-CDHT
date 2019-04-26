@@ -46,7 +46,10 @@ class EventLog(object):
         """
         Log time 
         """
-        log_s += str(time.time() - Store()["START_TIME"]) + "\t"
+        log_s += str(round(
+            time.time() - Store()["START_TIME"],
+            2
+        )) + "\t"
 
         """
         Log all the numbers 
@@ -66,8 +69,9 @@ class EventLog(object):
         self.log_fp.close()
 
 if __name__ == "__main__":
-    # open a log file as EventLog type
-    e = EventLog(open('responding_log.txt', 'w+'))
+    from sys import stdout
+    # print to standard out as a debug session 
+    e = EventLog(stdout)
     
     e.event = EVENT_SEND
     e.seq_num = 0
